@@ -12,25 +12,24 @@ class Result extends Component {
   }
 }
 
-class Button extends Component {
-  render() {
-    const name = "btn " + this.props.className;
-    const letter = this.props.letter;
-    return (
-      <button key={letter} className={name} >
-          {letter}
-      </button>
-    );
-  }
+function Button(props) {
+  const name = "btn " + props.value[1];
+  const letter = props.value[0];
+  return (
+    <button className={name} onClick={props.onClick} >
+      {letter}
+    </button>
+  );
 }
+
 
 class ButtonsContainer extends Component {
   renderButton(i) {
-    const key = "button " + i[0];    
     return(
-      <Button key={key} 
-        className= {i[1]}
-        letter= {i[0]} />
+      <Button 
+        key={i[0]} 
+        value={i}
+        onClick={() => this.props.onClick(i)}/>
     );
   }
 
@@ -65,27 +64,88 @@ class App extends Component {
   constructor() {
     super();
     this.state = {
+      // For layout
       buttons: [
-        ["cl", "danger-btn" ], ["%", ""],  [ "f", ""],     ["+", "func-btn"],
+        ["cl", "func-btn" ],    ["%", "func-btn"], [ "^", "func-btn"],   ["+", "func-btn"],
         ["7","reg-btn"],        ["8", "reg-btn"],  ["9", "reg-btn"],     ["–", "func-btn"],
         ["4", "reg-btn"],       ["5", "reg-btn"],  ["6", "reg-btn"],     ["x", "func-btn"],
         ["1", "reg-btn"],       ["2", "reg-btn"],  ["3", "reg-btn"],     ["÷", "func-btn"],
         [".", "reg-btn"],       ["0", "reg-btn"],  [        "=", "result-btn"        ]   ],
       rows: 5,
       btns_per_row: [4,4,4,4,3],
-      result: "00"
+      
+      // for actual calculation
+      result: "0",
+      saved_result: "",
+      current_func: "",
     };
   }
   
-  // handleFunc(i) {
-  //   const result = this.state.result;
-  //   if (i[1] === "reg-btn") {
-  //     this.setState({
-  //       result: result + i[0],
-  //     })
-  //   };
-  // 
-  // }
+  handleFunction(current_func, first, second) {
+    var result;
+    first = parseInt(first);
+    second = parseInt(second);
+    // result = first + second;
+    switch (current_func) {
+      case "+":
+        result = first + second;
+        break; 
+      case "–":
+        result = first - second;
+        break;
+      case "x":
+        result = first * second;
+        break;
+      case "÷":
+        result = first / second;
+        break;
+      case "^":
+        result = first ** second;
+        break;
+      case "%":
+        result = first % second;
+        break;
+      default:
+      console.log("something went wrong with handleFunction");
+      console.log(current_func, first, second);
+    }
+    return result;
+  }
+  
+  handleClick(i) {
+    let btn_type = i[1], btn_val = i[0];
+    let last_func = this.state.current_func;
+    let result = this.state.result;
+    let saved_result = this.state.saved_result;
+    
+    if (btn_type === "reg-btn"){
+      if (result === "0") {result = btn_val}
+      else if (last_func && !saved_result) {
+        saved_result = result;
+        result = btn_val; 
+      }else {result += btn_val};
+    }else if (btn_type === "func-btn") {
+      if (btn_val === "cl"){
+        result = "0";
+        saved_result = "";
+        last_func = "";
+      }else if (last_func) {
+        result = this.handleFunction(last_func, saved_result, result);
+        saved_result = "";
+      }else {last_func = btn_val}
+    }else if (btn_type === "result-btn") {
+      if(last_func && saved_result) {
+        result = this.handleFunction(last_func, saved_result, result);
+        saved_result = "";
+        last_func = "";
+      }
+    }
+    this.setState({
+      result: result,
+      saved_result: saved_result,
+      current_func: last_func,
+    });
+  }
   
   render() {
     const buttons = this.state.buttons;
@@ -98,7 +158,8 @@ class App extends Component {
         <ButtonsContainer 
           buttons={buttons}
           rows={rows} 
-          btns_per_row={btns_per_row}/>
+          btns_per_row={btns_per_row}
+          onClick={(i) => this.handleClick(i)}/>
       </div>
     );
   }
